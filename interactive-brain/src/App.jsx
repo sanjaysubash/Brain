@@ -2,6 +2,7 @@ import React, { useRef, useState, Suspense, useMemo, useEffect } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls, Stage, useGLTF, Html, Loader } from '@react-three/drei'
 import * as THREE from 'three'
+import AaruchudarLogo from './assets/A_Logo.png'
 
 /**
  * REGION metadata
@@ -47,7 +48,7 @@ const REGION_INFO = {
 }
 
 /* map mesh name -> region key by substring matching */
-function nameToRegionKey(name) {
+function nameToRegionKey(name, meshIndex = 0) {
   if (!name) return null
   const n = name.toLowerCase()
   
@@ -78,20 +79,11 @@ function nameToRegionKey(name) {
   if (n.includes('005') || n.includes('_5') || n.includes('5_')) return 'Cerebellum'
   if (n.includes('006') || n.includes('_6') || n.includes('6_')) return 'Brainstem'
   
-  // Create a more diverse distribution based on mesh index or position
-  const meshIndex = name.length % 6  // Use string length for distribution
+  // Use mesh index for even distribution
   const regions = ['Frontal', 'Parietal', 'Temporal', 'Occipital', 'Cerebellum', 'Brainstem']
+  const assignedRegion = regions[meshIndex % regions.length]
   
-  // Use a different hash function for better distribution
-  let hash = 0
-  for (let i = 0; i < name.length; i++) {
-    hash = ((hash << 5) - hash + name.charCodeAt(i)) & 0xffffffff
-  }
-  
-  const regionIndex = Math.abs(hash) % regions.length
-  const assignedRegion = regions[regionIndex]
-  
-  console.log(`Assigning mesh "${name}" to region: ${assignedRegion} (hash: ${hash}, index: ${regionIndex})`)
+  console.log(`Assigning mesh "${name}" (index: ${meshIndex}) to region: ${assignedRegion}`)
   
   return assignedRegion
 }
@@ -116,27 +108,39 @@ function BrainScene({ url = '/models/brain_areas.glb', selectedRegion, setSelect
   // gather meshes and prepare materials
   const meshes = useMemo(() => {
     const m = []
+    const regions = ['Frontal', 'Parietal', 'Temporal', 'Occipital', 'Cerebellum', 'Brainstem']
+    
     scene.traverse((child) => {
       if (child.isMesh) {
         // clone material so changes don't affect shared material
         child.material = child.material.clone()
         child.material.transparent = true
-        const regionKey = nameToRegionKey(child.name)
+        
+        // Use the mesh array index for distribution instead of a counter
+        const regionIndex = m.length % regions.length
+        const regionKey = regions[regionIndex]
         child.userData.regionKey = regionKey
         
-        // Set base color for the region
-        if (regionKey && regionColors[regionKey]) {
+        // Force set color
+        if (regionColors[regionKey]) {
           child.material.color.setHex(regionColors[regionKey])
-        } else {
-          // Default color for unrecognized parts
-          child.material.color.setHex(0xcccccc)
+          console.log(`Mesh ${m.length}: "${child.name}" -> ${regionKey} (${regionIndex}) -> #${regionColors[regionKey].toString(16)}`)
         }
         
         m.push(child)
       }
     })
-    console.log('Total meshes found:', m.length)
-    console.log('Mesh details:', m.map(mesh => ({ name: mesh.name, region: mesh.userData.regionKey })))
+    
+    console.log('=== FINAL MESH DISTRIBUTION ===')
+    console.log('Total meshes:', m.length)
+    const distribution = {}
+    m.forEach((mesh, i) => {
+      const region = mesh.userData.regionKey
+      distribution[region] = (distribution[region] || 0) + 1
+      console.log(`${i}: ${mesh.name} -> ${region}`)
+    })
+    console.log('Region distribution:', distribution)
+    
     return m
   }, [scene, regionColors])
 
@@ -307,7 +311,13 @@ export default function App() {
       <header className="header">
         <div className="header-content">
           <div className="brand-section">
-            <div className="brain-visual"></div>
+            <div className="logo-container">
+              <img 
+                src={AaruchudarLogo} 
+                alt="Aaruchudar Logo" 
+                className="company-logo"
+              />
+            </div>
             <div className="brand-text">
               <h1 className="company-name">AARUCHUDAR</h1>
               <p className="slogan">You understand, we rewire</p>
@@ -605,6 +615,75 @@ export default function App() {
           Neural pathways • Cognitive mapping • Real-time interaction
         </div>
       </footer>
+
+      {/* Lab Cards Section */}
+      <section className="labs-section">
+        <div className="labs-container">
+          <h2 className="labs-title">Human Intelligence Labs</h2>
+          <p className="labs-description">Explore our advanced human intelligence research facilities and cutting-edge brain analysis tools</p>
+          
+          <div className="labs-grid">
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((labNumber) => (
+              <div key={labNumber} className="lab-card">
+                <div className="lab-header">
+                  <div className="lab-icon">🧪</div>
+                  <h3 className="lab-title">Lab {labNumber}</h3>
+                </div>
+                <div className="lab-content">
+                  <p className="lab-description">
+                    Advanced human intelligence analysis and cognitive research facility specializing in brain mapping technologies.
+                  </p>
+                  <div className="lab-stats">
+                    <div className="lab-stat">
+                      <span className="stat-value">{Math.floor(Math.random() * 50) + 20}</span>
+                      <span className="stat-label">Experiments</span>
+                    </div>
+                    <div className="lab-stat">
+                      <span className="stat-value">{Math.floor(Math.random() * 100) + 50}%</span>
+                      <span className="stat-label">Accuracy</span>
+                    </div>
+                  </div>
+                  <button className="lab-button">
+                    Explore Lab {labNumber}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Download Dashboard Button */}
+          <div className="dashboard-section">
+            <div className="dashboard-card">
+              <div className="dashboard-content">
+                <h3 className="dashboard-title">Human Intelligence Report</h3>
+                <p className="dashboard-description">
+                  Download our comprehensive sample report to analyze brain patterns, track research progress, and visualize human intelligence data in real-time.
+                </p>
+                <div className="dashboard-features">
+                  <div className="feature-item">📊 Real-time Analytics</div>
+                  <div className="feature-item">🧠 Brain Pattern Analysis</div>
+                  <div className="feature-item">📈 Progress Tracking</div>
+                  <div className="feature-item">💾 Data Export Tools</div>
+                </div>
+                <button className="dashboard-download-btn">
+                  <span className="download-icon">⬇️</span>
+                  Download Sample Report
+                </button>
+              </div>
+              <div className="dashboard-visual">
+                <div className="dashboard-preview">
+                  <div className="preview-header"></div>
+                  <div className="preview-charts">
+                    <div className="chart-item"></div>
+                    <div className="chart-item"></div>
+                    <div className="chart-item"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   )
 }
