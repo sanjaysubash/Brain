@@ -94,6 +94,8 @@ function BrainScene({ url = '/models/brain_areas.glb', selectedRegion, setSelect
   const scene = gltf.scene
   const [hoveredRegion, setHoveredRegion] = useState(null)
   const [hoveredMesh, setHoveredMesh] = useState(null)
+  const [hoveredPosition, setHoveredPosition] = useState([0, 0, 0])
+  const [mousePosition, setMousePosition] = useState([0, 0])
   
   // Define colors for each brain region
   const regionColors = {
@@ -154,9 +156,14 @@ function BrainScene({ url = '/models/brain_areas.glb', selectedRegion, setSelect
         mesh.material.opacity = 1
         if (r && regionColors[r]) {
           mesh.material.color.setHex(regionColors[r])
-          // Add hover effect
+          // Enhanced hover effect - much more visible
           if (isHovered) {
-            mesh.material.emissive.setHex(0x333333)
+            mesh.material.emissive.setHex(0x888888) // Brighter emissive
+            mesh.material.opacity = 1
+            // Add pulsing effect by modifying the base color intensity
+            const baseColor = new THREE.Color(regionColors[r])
+            baseColor.multiplyScalar(1.5) // Make 50% brighter
+            mesh.material.color.set(baseColor)
           } else {
             mesh.material.emissive.setHex(0x000000)
           }
@@ -166,7 +173,7 @@ function BrainScene({ url = '/models/brain_areas.glb', selectedRegion, setSelect
         mesh.material.opacity = 1
         if (regionColors[r]) {
           mesh.material.color.setHex(regionColors[r])
-          mesh.material.emissive.setHex(isHovered ? 0x666666 : 0x444444)
+          mesh.material.emissive.setHex(isHovered ? 0xAAAAAA : 0x444444) // Even brighter on hover
         }
       } else {
         // Dim other parts
@@ -175,7 +182,8 @@ function BrainScene({ url = '/models/brain_areas.glb', selectedRegion, setSelect
           mesh.material.color.setHex(regionColors[r])
         }
         if (isHovered) {
-          mesh.material.emissive.setHex(0x222222)
+          mesh.material.emissive.setHex(0x555555) // Brighter hover for dimmed parts
+          mesh.material.opacity = Math.min(isolationOpacity + 0.3, 1) // Increase opacity on hover
         } else {
           mesh.material.emissive.setHex(0x000000)
         }
@@ -197,6 +205,18 @@ function BrainScene({ url = '/models/brain_areas.glb', selectedRegion, setSelect
     e.stopPropagation()
     const picked = e.object
     const region = picked.userData.regionKey || nameToRegionKey(picked.name)
+    
+    // Get the intersection point for more accurate positioning
+    const intersectionPoint = e.point
+    if (intersectionPoint) {
+      setHoveredPosition([intersectionPoint.x, intersectionPoint.y, intersectionPoint.z])
+    } else {
+      // Fallback to mesh center
+      const boundingBox = new THREE.Box3().setFromObject(picked)
+      const center = boundingBox.getCenter(new THREE.Vector3())
+      setHoveredPosition([center.x, center.y, center.z])
+    }
+    
     setHoveredMesh(picked)
     setHoveredRegion(region)
     document.body.style.cursor = 'pointer'
@@ -206,7 +226,17 @@ function BrainScene({ url = '/models/brain_areas.glb', selectedRegion, setSelect
     e.stopPropagation()
     setHoveredMesh(null)
     setHoveredRegion(null)
+    setHoveredPosition([0, 0, 0])
     document.body.style.cursor = 'default'
+  }
+
+  function onPointerMove(e) {
+    if (hoveredRegion) {
+      const intersectionPoint = e.point
+      if (intersectionPoint) {
+        setHoveredPosition([intersectionPoint.x, intersectionPoint.y, intersectionPoint.z])
+      }
+    }
   }
 
   return (
@@ -216,30 +246,28 @@ function BrainScene({ url = '/models/brain_areas.glb', selectedRegion, setSelect
         onPointerDown={onPointerDown}
         onPointerEnter={onPointerEnter}
         onPointerLeave={onPointerLeave}
+        onPointerMove={onPointerMove}
       />
+      
+      {/* Simplified Hover Info Panel - No Connection Line */}
       {hoveredRegion && (
         <Html
-          position={[0, 2, 0]}
+          position={[hoveredPosition[0] + 0.3, hoveredPosition[1] + 0.5, hoveredPosition[2] + 0.2]}
           center
           style={{
             pointerEvents: 'none',
-            transform: 'translate3d(0, -50px, 0)'
+            transform: 'translate(-50%, -100%)',
+            zIndex: 10000
           }}
         >
-          <div style={{
-            background: 'rgba(0, 212, 255, 0.9)',
-            color: '#000',
-            padding: '8px 16px',
-            borderRadius: '8px',
-            fontSize: '14px',
-            fontWeight: '600',
-            boxShadow: '0 4px 12px rgba(0, 212, 255, 0.4)',
-            border: '1px solid rgba(255, 255, 255, 0.3)',
-            backdropFilter: 'blur(10px)',
-            textAlign: 'center',
-            minWidth: '120px'
-          }}>
-            {REGION_INFO[hoveredRegion]?.title || hoveredRegion}
+          <div className="brain-info-panel-simple">
+            <div className="info-header-simple">
+              <div className="region-indicator-simple"></div>
+              <h3 className="region-name-simple">{REGION_INFO[hoveredRegion]?.title || hoveredRegion}</h3>
+            </div>
+            <div className="info-content-simple">
+              <p className="region-function-simple">{REGION_INFO[hoveredRegion]?.short}</p>
+            </div>
           </div>
         </Html>
       )}
@@ -307,6 +335,9 @@ export default function App() {
 
   return (
     <div className="app-container">
+      {/* Brain Pattern Overlay */}
+      <div className="brain-pattern-overlay"></div>
+      
       {/* Aaruchudar Header with Brain Visual */}
       <header className="header">
         <div className="header-content">
