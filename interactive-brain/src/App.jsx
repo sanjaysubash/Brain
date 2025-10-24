@@ -364,7 +364,7 @@ export default function App() {
               <div className="stat-label">Neural View</div>
             </div>
             <div className="stat-item">
-              <div className="stat-value">AI</div>
+              <div className="stat-value">HI</div>
               <div className="stat-label">Powered</div>
             </div>
           </div>
