@@ -1,8 +1,11 @@
 import React, { useRef, useState, Suspense, useMemo, useEffect } from 'react'
+import { Routes, Route, useNavigate } from 'react-router-dom'
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls, Stage, useGLTF, Html, Loader } from '@react-three/drei'
 import * as THREE from 'three'
 import AaruchudarLogo from './assets/A_Logo.png'
+import Lab5 from './Lab5'
+import Lab6 from './Lab6'
 
 /**
  * REGION metadata
@@ -322,15 +325,27 @@ class ModelErrorBoundary extends React.Component {
 }
 
 /* Main App */
-export default function App() {
+function HomePage() {
   const [selectedRegion, setSelectedRegion] = useState(null)
   const [isolationOpacity, setIsolationOpacity] = useState(0.12)
+  const navigate = useNavigate()
 
   const description = selectedRegion ? REGION_INFO[selectedRegion] : null
 
   function resetView() {
     setSelectedRegion(null)
     setIsolationOpacity(0.12)
+  }
+
+  function handleLabClick(labNumber) {
+    if (labNumber === 5) {
+      navigate('/lab5')
+    } else if (labNumber === 6) {
+      navigate('/lab6')
+    } else {
+      // For other labs, you can add logic here later
+      console.log(`Lab ${labNumber} functionality coming soon`)
+    }
   }
 
   return (
@@ -662,7 +677,10 @@ export default function App() {
                 </div>
                 <div className="lab-content">
                   <p className="lab-description">
-                    Advanced human intelligence analysis and cognitive research facility specializing in brain mapping technologies.
+                    {labNumber === 5 
+                      ? "Intelligent Conflict and Recovery - Learn to transform disagreements into opportunities for growth and understanding through compassion and skill."
+                      : "Advanced human intelligence analysis and cognitive research facility specializing in brain mapping technologies."
+                    }
                   </p>
                   <div className="lab-stats">
                     <div className="lab-stat">
@@ -674,8 +692,16 @@ export default function App() {
                       <span className="stat-label">Accuracy</span>
                     </div>
                   </div>
-                  <button className="lab-button">
-                    Explore Lab {labNumber}
+                  <button 
+                    className="lab-button"
+                    onClick={() => handleLabClick(labNumber)}
+                    style={{
+                      backgroundColor: labNumber === 5 ? '#06ffa5' : undefined,
+                      color: labNumber === 5 ? '#000' : undefined,
+                      fontWeight: labNumber === 5 ? '700' : undefined
+                    }}
+                  >
+                    {labNumber === 5 ? 'Explore Conflict & Recovery Lab' : `Explore Lab ${labNumber}`}
                   </button>
                 </div>
               </div>
@@ -716,5 +742,15 @@ export default function App() {
         </div>
       </section>
     </div>
+  )
+}
+
+export default function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<HomePage />} />
+      <Route path="/lab5" element={<Lab5 />} />
+      <Route path="/lab6" element={<Lab6 />} />
+    </Routes>
   )
 }
