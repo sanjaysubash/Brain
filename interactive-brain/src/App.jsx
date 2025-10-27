@@ -8,6 +8,53 @@ import Lab5 from './Lab5'
 import Lab6 from './Lab6'
 
 /**
+ * LAB TO BRAIN REGION MAPPING
+ * Each lab activates specific brain regions for targeted neural analysis
+ */
+const LAB_BRAIN_MAP = {
+  lab1: {
+    name: "Cognitive Foundations",
+    description: "Basic cognitive processing and attention",
+    regions: ["Frontal"]
+  },
+  lab2: {
+    name: "Memory & Language",
+    description: "Memory formation and language comprehension",
+    regions: ["Temporal", "Frontal"]
+  },
+  lab3: {
+    name: "Motor Coordination",
+    description: "Movement control and balance",
+    regions: ["Cerebellum"]
+  },
+  lab4: {
+    name: "Vital Functions",
+    description: "Autonomic systems and arousal",
+    regions: ["Brainstem"]
+  },
+  lab5: {
+    name: "Conflict & Recovery",
+    description: "Emotional regulation and decision-making",
+    regions: ["Frontal", "Temporal", "Cerebellum"]
+  },
+  lab6: {
+    name: "Systemic Thinking",
+    description: "Spatial processing and integration",
+    regions: ["Parietal", "Frontal"]
+  },
+  lab7: {
+    name: "Memory Networks",
+    description: "Long-term memory and recall systems",
+    regions: ["Temporal", "Frontal"]
+  },
+  lab8: {
+    name: "Visual Processing",
+    description: "Visual perception and processing",
+    regions: ["Occipital", "Parietal"]
+  }
+}
+
+/**
  * REGION metadata
  * Edit text here if you want to change the info shown on click.
  */
@@ -91,14 +138,20 @@ function nameToRegionKey(name, meshIndex = 0) {
   return assignedRegion
 }
 
-/* BrainScene component - loads GLB and sets per-mesh opacity/emissive depending on selection */
-function BrainScene({ url = '/models/brain_areas.glb', selectedRegion, setSelectedRegion, isolationOpacity }) {
+/* Enhanced BrainScene component - supports both single region and lab-based multi-region highlighting */
+function BrainScene({ 
+  url = '/models/brain_areas.glb', 
+  selectedRegion, 
+  setSelectedRegion, 
+  isolationOpacity,
+  selectedLab,
+  setSelectedLab 
+}) {
   const gltf = useGLTF(url)
   const scene = gltf.scene
   const [hoveredRegion, setHoveredRegion] = useState(null)
   const [hoveredMesh, setHoveredMesh] = useState(null)
   const [hoveredPosition, setHoveredPosition] = useState([0, 0, 0])
-  const [mousePosition, setMousePosition] = useState([0, 0])
   
   // Define colors for each brain region
   const regionColors = {
@@ -109,6 +162,12 @@ function BrainScene({ url = '/models/brain_areas.glb', selectedRegion, setSelect
     'Cerebellum': 0x8B5CF6, // Purple
     'Brainstem': 0x06B6D4   // Cyan
   }
+  
+  // Lab highlight color (brighter for lab mode)
+  const labHighlightColor = 0x06FFA5 // Bright green
+  
+  // Get active regions based on selected lab
+  const activeRegions = selectedLab ? LAB_BRAIN_MAP[selectedLab]?.regions || [] : []
   
   // gather meshes and prepare materials
   const meshes = useMemo(() => {
@@ -154,54 +213,73 @@ function BrainScene({ url = '/models/brain_areas.glb', selectedRegion, setSelect
       const r = mesh.userData.regionKey
       const isHovered = mesh === hoveredMesh
       
-      if (!selectedRegion) {
-        // Show all parts with their region colors
+      // Lab mode: highlight specific regions for the selected lab
+      if (selectedLab && activeRegions.length > 0) {
+        const isActiveInLab = activeRegions.includes(r)
+        
+        if (isActiveInLab) {
+          // Highlight active regions with bright lab color
+          mesh.material.opacity = 1
+          mesh.material.color.setHex(labHighlightColor)
+          mesh.material.emissive.setHex(isHovered ? 0x444444 : 0x222222)
+        } else {
+          // Dim inactive regions significantly
+          mesh.material.opacity = isolationOpacity * 0.3
+          if (r && regionColors[r]) {
+            mesh.material.color.setHex(regionColors[r])
+          }
+          mesh.material.emissive.setHex(isHovered ? 0x333333 : 0x000000)
+        }
+      }
+      // Single region mode: existing functionality
+      else if (selectedRegion) {
+        if (r === selectedRegion) {
+          // Highlight selected region
+          mesh.material.opacity = 1
+          if (regionColors[r]) {
+            mesh.material.color.setHex(regionColors[r])
+            mesh.material.emissive.setHex(isHovered ? 0xAAAAAA : 0x444444)
+          }
+        } else {
+          // Dim other parts
+          mesh.material.opacity = isolationOpacity
+          if (r && regionColors[r]) {
+            mesh.material.color.setHex(regionColors[r])
+          }
+          mesh.material.emissive.setHex(isHovered ? 0x555555 : 0x000000)
+        }
+      }
+      // Default mode: show all regions normally
+      else {
         mesh.material.opacity = 1
         if (r && regionColors[r]) {
           mesh.material.color.setHex(regionColors[r])
-          // Enhanced hover effect - much more visible
           if (isHovered) {
-            mesh.material.emissive.setHex(0x888888) // Brighter emissive
-            mesh.material.opacity = 1
-            // Add pulsing effect by modifying the base color intensity
+            mesh.material.emissive.setHex(0x888888)
             const baseColor = new THREE.Color(regionColors[r])
-            baseColor.multiplyScalar(1.5) // Make 50% brighter
+            baseColor.multiplyScalar(1.5)
             mesh.material.color.set(baseColor)
           } else {
             mesh.material.emissive.setHex(0x000000)
           }
         }
-      } else if (r === selectedRegion) {
-        // Highlight selected region
-        mesh.material.opacity = 1
-        if (regionColors[r]) {
-          mesh.material.color.setHex(regionColors[r])
-          mesh.material.emissive.setHex(isHovered ? 0xAAAAAA : 0x444444) // Even brighter on hover
-        }
-      } else {
-        // Dim other parts
-        mesh.material.opacity = isolationOpacity
-        if (r && regionColors[r]) {
-          mesh.material.color.setHex(regionColors[r])
-        }
-        if (isHovered) {
-          mesh.material.emissive.setHex(0x555555) // Brighter hover for dimmed parts
-          mesh.material.opacity = Math.min(isolationOpacity + 0.3, 1) // Increase opacity on hover
-        } else {
-          mesh.material.emissive.setHex(0x000000)
-        }
       }
+      
       mesh.material.depthWrite = mesh.material.opacity > 0.5
       mesh.material.needsUpdate = true
     })
-  }, [meshes, selectedRegion, isolationOpacity, regionColors, hoveredMesh])
+  }, [meshes, selectedRegion, selectedLab, activeRegions, isolationOpacity, regionColors, hoveredMesh, labHighlightColor])
 
   function onPointerDown(e) {
     e.stopPropagation()
     const picked = e.object
     const region = picked.userData.regionKey || nameToRegionKey(picked.name)
     console.log('Clicked region:', region, 'from mesh:', picked.name)
-    setSelectedRegion((prev) => (prev === region ? null : region))
+    
+    // Only allow region selection if not in lab mode
+    if (!selectedLab) {
+      setSelectedRegion((prev) => (prev === region ? null : region))
+    }
   }
 
   function onPointerEnter(e) {
@@ -252,7 +330,7 @@ function BrainScene({ url = '/models/brain_areas.glb', selectedRegion, setSelect
         onPointerMove={onPointerMove}
       />
       
-      {/* Simplified Hover Info Panel - No Connection Line */}
+      {/* Enhanced Hover Info Panel with Lab Context */}
       {hoveredRegion && (
         <Html
           position={[hoveredPosition[0] + 0.3, hoveredPosition[1] + 0.5, hoveredPosition[2] + 0.2]}
@@ -270,6 +348,16 @@ function BrainScene({ url = '/models/brain_areas.glb', selectedRegion, setSelect
             </div>
             <div className="info-content-simple">
               <p className="region-function-simple">{REGION_INFO[hoveredRegion]?.short}</p>
+              {selectedLab && activeRegions.includes(hoveredRegion) && (
+                <p style={{ 
+                  marginTop: '8px', 
+                  fontSize: '12px', 
+                  color: '#06ffa5', 
+                  fontWeight: '600' 
+                }}>
+                  ✨ Active in {LAB_BRAIN_MAP[selectedLab]?.name}
+                </p>
+              )}
             </div>
           </div>
         </Html>
@@ -328,6 +416,7 @@ class ModelErrorBoundary extends React.Component {
 function HomePage() {
   const [selectedRegion, setSelectedRegion] = useState(null)
   const [isolationOpacity, setIsolationOpacity] = useState(0.12)
+  const [selectedLab, setSelectedLab] = useState(null)
   const navigate = useNavigate()
 
   const description = selectedRegion ? REGION_INFO[selectedRegion] : null
@@ -587,10 +676,150 @@ function HomePage() {
             {/* 3D Viewport */}
             <div className="right">
               <div className="card">
+                {/* Lab Selection Controls - Horizontal Layout Above Brain Viewer */}
+                <div style={{ 
+                  marginBottom: '20px', 
+                  padding: '20px', 
+                  background: 'rgba(6, 255, 165, 0.05)', 
+                  border: '1px solid rgba(6, 255, 165, 0.2)', 
+                  borderRadius: '12px' 
+                }}>
+                  <h3 style={{ 
+                    color: '#06ffa5', 
+                    fontSize: '18px', 
+                    fontWeight: 'bold', 
+                    marginBottom: '15px',
+                    textAlign: 'center'
+                  }}>
+                    🧪 Lab Neural Mapping
+                  </h3>
+                  
+                  {selectedLab && (
+                    <div style={{ 
+                      textAlign: 'center', 
+                      marginBottom: '15px',
+                      padding: '12px',
+                      background: 'rgba(6, 255, 165, 0.1)',
+                      borderRadius: '8px'
+                    }}>
+                      <div style={{ color: '#06ffa5', fontSize: '16px', fontWeight: '600' }}>
+                        {LAB_BRAIN_MAP[selectedLab]?.name}
+                      </div>
+                      <div style={{ color: '#ffffff', fontSize: '14px', marginTop: '4px' }}>
+                        {LAB_BRAIN_MAP[selectedLab]?.description}
+                      </div>
+                      <div style={{ color: '#00d4ff', fontSize: '12px', marginTop: '8px' }}>
+                        Active Regions: {LAB_BRAIN_MAP[selectedLab]?.regions.join(', ')}
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(4, 1fr)', 
+                    gap: '8px',
+                    marginBottom: '12px'
+                  }}>
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map((labNum) => {
+                      const labKey = `lab${labNum}`
+                      const isSelected = selectedLab === labKey
+                      const labInfo = LAB_BRAIN_MAP[labKey]
+                      
+                      return (
+                        <button
+                          key={labNum}
+                          onClick={() => {
+                            // Clear single region selection when lab is selected
+                            setSelectedRegion(null)
+                            setSelectedLab(prev => prev === labKey ? null : labKey)
+                          }}
+                          style={{
+                            padding: '10px 8px',
+                            backgroundColor: isSelected ? '#06ffa5' : 'rgba(0, 212, 255, 0.15)',
+                            color: isSelected ? '#000' : '#ffffff',
+                            border: `1px solid ${isSelected ? '#06ffa5' : '#00d4ff'}`,
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            fontWeight: '600',
+                            fontSize: '14px',
+                            transition: 'all 0.3s ease',
+                            textAlign: 'center'
+                          }}
+                          title={`${labInfo?.name}: ${labInfo?.description}`}
+                        >
+                          Lab {labNum}
+                        </button>
+                      )
+                    })}
+                  </div>
+                  
+                  <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
+                    <button
+                      onClick={() => {
+                        setSelectedLab(null)
+                        setSelectedRegion(null)
+                      }}
+                      style={{
+                        padding: '8px 16px',
+                        backgroundColor: (!selectedLab && !selectedRegion) ? '#00d4ff' : 'rgba(139, 92, 246, 0.15)',
+                        color: (!selectedLab && !selectedRegion) ? '#000' : '#ffffff',
+                        border: `1px solid ${(!selectedLab && !selectedRegion) ? '#00d4ff' : '#8b5cf6'}`,
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontWeight: '600',
+                        fontSize: '12px',
+                        transition: 'all 0.3s ease'
+                      }}
+                    >
+                      Clear All
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (selectedLab) {
+                          // Navigate to the specific lab page if available
+                          const labNumber = parseInt(selectedLab.replace('lab', ''))
+                          if (labNumber === 5) navigate('/lab5')
+                          else if (labNumber === 6) navigate('/lab6')
+                          else {
+                            console.log(`Lab ${labNumber} page coming soon`)
+                          }
+                        }
+                      }}
+                      disabled={!selectedLab}
+                      style={{
+                        padding: '8px 16px',
+                        backgroundColor: selectedLab ? '#06ffa5' : 'rgba(139, 92, 246, 0.1)',
+                        color: selectedLab ? '#000' : '#666',
+                        border: `1px solid ${selectedLab ? '#06ffa5' : '#8b5cf6'}`,
+                        borderRadius: '6px',
+                        cursor: selectedLab ? 'pointer' : 'not-allowed',
+                        fontWeight: '600',
+                        fontSize: '12px',
+                        transition: 'all 0.3s ease',
+                        opacity: selectedLab ? 1 : 0.5
+                      }}
+                    >
+                      Explore Lab →
+                    </button>
+                  </div>
+                  
+                  <div style={{ 
+                    marginTop: '12px', 
+                    fontSize: '11px', 
+                    color: '#cbd5e1',
+                    textAlign: 'center',
+                    fontStyle: 'italic'
+                  }}>
+                    💡 Select a lab to highlight its active brain regions in the 3D model
+                  </div>
+                </div>
+
                 <div className="viewport-container">
                   <div className="hud-overlay">
                     <div className="hud-element">NEURAL SCAN ACTIVE</div>
-                    <div className="hud-element">3D MODEL: BRAIN_AREAS.GLB</div>
+                    <div className="hud-element">
+                      {selectedLab ? `LAB MODE: ${LAB_BRAIN_MAP[selectedLab]?.name.toUpperCase()}` : '3D MODEL: BRAIN_AREAS.GLB'}
+                    </div>
                   </div>
                   <div className="canvas-wrap">
                     <Canvas camera={{ position: [0, 0, 3], fov: 45 }}>
@@ -605,7 +834,7 @@ function HomePage() {
                             adjustCamera={true}
                             center={true}
                           >
-                            <BrainScene selectedRegion={selectedRegion} setSelectedRegion={setSelectedRegion} isolationOpacity={isolationOpacity} />
+                            <BrainScene selectedRegion={selectedRegion} setSelectedRegion={setSelectedRegion} isolationOpacity={isolationOpacity} selectedLab={selectedLab} setSelectedLab={setSelectedLab} />
                           </Stage>
                         </ModelErrorBoundary>
                       </Suspense>
