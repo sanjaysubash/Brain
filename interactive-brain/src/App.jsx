@@ -4,53 +4,68 @@ import { Canvas } from '@react-three/fiber'
 import { OrbitControls, Stage, useGLTF, Html, Loader } from '@react-three/drei'
 import * as THREE from 'three'
 import AaruchudarLogo from './assets/A_Logo.png'
+import Lab1 from './Lab1'
+import Lab2 from './Lab2'
+import Lab3 from './Lab3'
+import Lab4 from './Lab4'
 import Lab5 from './Lab5'
 import Lab6 from './Lab6'
+import Lab7 from './Lab7'
+import Lab8 from './Lab8'
 
 /**
  * LAB TO BRAIN REGION MAPPING
  * Each lab activates specific brain regions for targeted neural analysis
+ * Updated according to detailed lab specifications
  */
 const LAB_BRAIN_MAP = {
   lab1: {
-    name: "Cognitive Foundations",
-    description: "Basic cognitive processing and attention",
-    regions: ["Frontal"]
+    name: "Clarity as Culture",
+    description: "Breaking confusion, Building thinking clarity",
+    regions: ["Frontal"], // Prefrontal Cortex (PFC) + Anterior Cingulate Cortex (ACC)
+    details: "Activates Prefrontal Cortex and Anterior Cingulate Cortex for clear thinking and error detection"
   },
   lab2: {
-    name: "Memory & Language",
-    description: "Memory formation and language comprehension",
-    regions: ["Temporal", "Frontal"]
+    name: "Decision Making Without Drama",
+    description: "Emotional Intelligence, decision-making",
+    regions: ["Frontal", "Temporal"], // vmPFC, dlPFC, Amygdala, Anterior Insula
+    details: "Activates multiple prefrontal regions, amygdala, and insula for balanced decision-making"
   },
   lab3: {
-    name: "Motor Coordination",
-    description: "Movement control and balance",
-    regions: ["Cerebellum"]
+    name: "Inner Focus in a Noisy World",
+    description: "Improving focus and Reducing distractions",
+    regions: ["Frontal", "Parietal"], // Dorsal Attention Network, Default Mode Network, Basal Ganglia, Anterior Insula
+    details: "Activates attention networks, basal ganglia, and insula for sustained focus"
   },
   lab4: {
-    name: "Vital Functions",
-    description: "Autonomic systems and arousal",
-    regions: ["Brainstem"]
+    name: "The Power of Listening",
+    description: "Listening deeply and Understanding others",
+    regions: ["Temporal", "Frontal"], // Temporal Lobes (Wernicke's), Mirror Neurons, mPFC, STS
+    details: "Activates temporal lobes, mirror neuron system, and social cognition networks"
   },
   lab5: {
-    name: "Conflict & Recovery",
-    description: "Emotional regulation and decision-making",
-    regions: ["Frontal", "Temporal", "Cerebellum"]
+    name: "Intelligent Conflict and Recovery",
+    description: "Handling conflicts with emotional maturity",
+    regions: ["Frontal", "Temporal", "Cerebellum"], // Amygdala, OFC, Hippocampus, PFC
+    details: "Activates amygdala, orbitofrontal cortex, hippocampus, and prefrontal regions"
   },
   lab6: {
-    name: "Systemic Thinking",
-    description: "Spatial processing and integration",
-    regions: ["Parietal", "Frontal"]
+    name: "Systematic Thinking",
+    description: "Complex Thinking and Patterns forming",
+    regions: ["Frontal", "Parietal", "Cerebellum"], // PFC, Posterior Parietal Cortex, Precuneus, Cerebellum
+    details: "Activates prefrontal cortex, parietal regions, precuneus, and cerebellum"
   },
   lab7: {
-    name: "Memory Networks",
-    description: "Long-term memory and recall systems",
-    regions: ["Temporal", "Frontal"]
+    name: "Voice, Value, and Vulnerability",
+    description: "Speaking truth and Building confidence",
+    regions: ["Frontal", "Temporal"], // vmPFC, Anterior Insula, PAG, PCC
+    details: "Activates ventromedial prefrontal cortex, insula, PAG, and posterior cingulate"
   },
   lab8: {
-    name: "Visual Processing",
-    description: "Visual perception and processing",
-    regions: ["Occipital", "Parietal"]
+    name: "Leadership Without Imitation",
+    description: "Leading with originality and Inner clarity",
+    regions: ["Frontal", "Parietal"], // mPFC, vlPFC, DMN, Fronto-Striatal Circuits
+    details: "Activates medial and ventrolateral prefrontal regions, default mode network, and motor circuits"
   }
 }
 
@@ -427,13 +442,34 @@ function HomePage() {
   }
 
   function handleLabClick(labNumber) {
-    if (labNumber === 5) {
-      navigate('/lab5')
-    } else if (labNumber === 6) {
-      navigate('/lab6')
-    } else {
-      // For other labs, you can add logic here later
-      console.log(`Lab ${labNumber} functionality coming soon`)
+    // Navigate to specific lab pages
+    switch(labNumber) {
+      case 1:
+        navigate('/lab1')
+        break
+      case 2:
+        navigate('/lab2')
+        break
+      case 3:
+        navigate('/lab3')
+        break
+      case 4:
+        navigate('/lab4')
+        break
+      case 5:
+        navigate('/lab5')
+        break
+      case 6:
+        navigate('/lab6')
+        break
+      case 7:
+        navigate('/lab7')
+        break
+      case 8:
+        navigate('/lab8')
+        break
+      default:
+        console.log(`Lab ${labNumber} functionality coming soon`)
     }
   }
 
@@ -776,13 +812,9 @@ function HomePage() {
                     <button
                       onClick={() => {
                         if (selectedLab) {
-                          // Navigate to the specific lab page if available
+                          // Navigate to the specific lab page
                           const labNumber = parseInt(selectedLab.replace('lab', ''))
-                          if (labNumber === 5) navigate('/lab5')
-                          else if (labNumber === 6) navigate('/lab6')
-                          else {
-                            console.log(`Lab ${labNumber} page coming soon`)
-                          }
+                          handleLabClick(labNumber)
                         }
                       }}
                       disabled={!selectedLab}
@@ -978,8 +1010,14 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />
+      <Route path="/lab1" element={<Lab1 />} />
+      <Route path="/lab2" element={<Lab2 />} />
+      <Route path="/lab3" element={<Lab3 />} />
+      <Route path="/lab4" element={<Lab4 />} />
       <Route path="/lab5" element={<Lab5 />} />
       <Route path="/lab6" element={<Lab6 />} />
+      <Route path="/lab7" element={<Lab7 />} />
+      <Route path="/lab8" element={<Lab8 />} />
     </Routes>
   )
 }
